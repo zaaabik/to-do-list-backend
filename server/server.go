@@ -5,10 +5,9 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/cors"
 	db "github.com/zabik/to-do-list/database"
+	"io/ioutil"
 	"log"
-	_ "log"
 	"net/http"
-	"time"
 )
 
 type allItemJson struct {
@@ -16,10 +15,12 @@ type allItemJson struct {
 }
 
 type addItemStruct struct {
-	name string `json:"name"`
-	time string `json:"time"`
+	Name string `json:"name"`
+	Time string `json:"time"`
 }
-
+type deleteItemStruct struct {
+	Id string `json:"id"`
+}
 type Server struct {
 	store db.Istore
 }
@@ -42,18 +43,47 @@ func (s Server) Start() {
 	r.Post("/addItem", s.addItem)
 	r.Get("/getAll", s.getAllItems)
 	r.Delete("/deleteAll", s.deleteAll)
+	r.Delete("/deleteItem", s.deleteItem)
 	http.ListenAndServe(":1113", r)
 
 }
-func (s Server) addItem(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseForm()
+func (s Server) deleteItem(w http.ResponseWriter, r *http.Request) {
+	res, _ := ioutil.ReadAll(r.Body)
+	var item deleteItemStruct
+	err := json.Unmarshal([]byte(res), &item)
 	if err != nil {
-
+		log.Print(err)
+		return
 	}
-	name := r.Form["name"][0]
-	timeToDo := r.Form["time"][0]
-	s.store.Save(db.ListItem{time.Now().Unix(), name, timeToDo})
-	s.store.GetAll()
+	err = s.store.Delete(item.Id)
+	if err != nil {
+		log.Print(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+func (s Server) addItem(w http.ResponseWriter, r *http.Request) {
+	res, _ := ioutil.ReadAll(r.Body)
+	var item addItemStruct
+	err := json.Unmarshal([]byte(res), &item)
+	if err != nil {
+		log.Print(err)
+		return
+	}
+	log.Print(item)
+	if item.Name == "" || item.Time == "" {
+		log.Print("empty parametrs on addItem method : bad request!")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	id, err := s.store.Save(db.ListItem{item.Name, item.Time})
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(id))
 }
 
 func (s Server) getAllItems(w http.ResponseWriter, r *http.Request) {
