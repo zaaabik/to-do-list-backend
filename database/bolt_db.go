@@ -1,11 +1,14 @@
 package database
 
 import (
+	_ "encoding/binary"
 	"encoding/json"
-	"github.com/boltdb/bolt"
-	"time"
+	"errors"
 	"fmt"
+	"github.com/boltdb/bolt"
 	"log"
+	"strconv"
+	"time"
 )
 
 const dbBucket = "toDoList"
@@ -22,10 +25,12 @@ func NewBoltDb(path string) (*BoltDb, error) {
 	return &BoltDb{db}, err
 }
 
-func (b *BoltDb) Save(item ListItem) error {
+func (b *BoltDb) Save(item ListItem) (string, error) {
+	t := strconv.FormatInt(time.Now().Unix(), 10)
+	log.Print(t)
 	enc, err := json.Marshal(item)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	err = b.db.Update(func(tx *bolt.Tx) error {
@@ -35,29 +40,30 @@ func (b *BoltDb) Save(item ListItem) error {
 			return err
 		}
 
-		err = req.Put([]byte(time.Now().Format(time.UnixDate)), enc)
+		err = req.Put([]byte(t), enc)
 		if err != nil {
 			return err
 		}
 		return nil
 	})
 	if err != nil {
-		return err
+		return "", err
 	}
-	return nil
+	return t, nil
 }
-func (b *BoltDb) GetAll() ([]ListItem,error){
-	var res []ListItem
+func (b *BoltDb) GetAll() ([]ListItemWithId, error) {
+	var res []ListItemWithId
 	err := b.db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(dbBucket))
 		if b == nil {
-			var emptyResult []ListItem
+			var emptyResult []ListItemWithId
 			res = emptyResult
 			return nil
 		}
 		err := b.ForEach(func(k, v []byte) error {
-			var item ListItem
-			json.Unmarshal(v,&item)
+			var item ListItemWithId
+			json.Unmarshal(v, &item)
+			item.Id = string(k)
 			res = append(res, item)
 			return nil
 		})
@@ -68,13 +74,13 @@ func (b *BoltDb) GetAll() ([]ListItem,error){
 	})
 
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
 	fmt.Print(res)
 	return res, nil
 }
 
-func (b *BoltDb) DeleteAll() error{
+func (b *BoltDb) DeleteAll() error {
 	err := b.db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(dbBucket))
 		if b == nil {
@@ -89,14 +95,14 @@ func (b *BoltDb) DeleteAll() error{
 	return nil
 }
 
-func (b *BoltDb) Delete(item ListItem) error {
+func (b *BoltDb) Delete(key string) error {
 	err := b.db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(dbBucket))
 		if b == nil {
-			return nil
+			return errors.New("bucket is empty=" + key)
 		}
-		tx.DeleteBucket([]byte(dbBucket))
-		return nil
+		err := b.Delete([]byte(key))
+		return err
 	})
 	if err != nil {
 		return err
