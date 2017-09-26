@@ -26,8 +26,8 @@ func NewBoltDb(path string) (*BoltDb, error) {
 }
 
 func (b *BoltDb) Save(item ListItem) (string, error) {
-	t := strconv.FormatInt(time.Now().Unix(), 10)
-	log.Print(t)
+	key := strconv.FormatInt(time.Now().Unix(), 10)
+	log.Print(key)
 	enc, err := json.Marshal(item)
 	if err != nil {
 		return "", err
@@ -40,7 +40,7 @@ func (b *BoltDb) Save(item ListItem) (string, error) {
 			return err
 		}
 
-		err = req.Put([]byte(t), enc)
+		err = req.Put([]byte(key), enc)
 		if err != nil {
 			return err
 		}
@@ -49,7 +49,7 @@ func (b *BoltDb) Save(item ListItem) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return t, nil
+	return key, nil
 }
 func (b *BoltDb) GetAll() ([]ListItemWithId, error) {
 	var res []ListItemWithId
