@@ -11,7 +11,7 @@ import (
 )
 
 type allItemJson struct {
-	items []db.ToDoItem `json:"items"`
+	items []db.ToDo `json:"items"`
 }
 
 type addItemStruct struct {
@@ -77,7 +77,7 @@ func (s Server) addItem(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	id, err := s.store.Save(db.ToDoItem{item.Name, item.Time})
+	id, err := s.store.Save(db.ToDo{item.Name, item.Time})
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
