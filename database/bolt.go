@@ -50,6 +50,31 @@ func (b *BoltDb) Save(item ToDo) (string, error) {
 	}
 	return key, nil
 }
+func (b *BoltDb) Get(id string) (ToDotWithId, error) {
+	var res ToDotWithId
+	emptyResult := ToDotWithId{}
+	err := b.db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(dbBucket))
+		if b == nil {
+			res = emptyResult
+			return nil
+		}
+		rawToDo := b.Get([]byte(id))
+		err := json.Unmarshal(rawToDo, &res)
+		if err != nil {
+			return err
+		}
+		res.Id = id
+		return nil
+	})
+
+	if err != nil {
+		return emptyResult, err
+	}
+	fmt.Print(res)
+	return res, nil
+}
+
 func (b *BoltDb) GetAll() ([]ToDotWithId, error) {
 	var res []ToDotWithId
 	err := b.db.View(func(tx *bolt.Tx) error {

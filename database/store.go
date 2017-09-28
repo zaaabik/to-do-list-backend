@@ -8,7 +8,7 @@ type ToDo struct {
 type ToDotWithId struct {
 	Id   string
 	Name string
-	Data string
+	Time string
 }
 
 type Store interface {
@@ -16,5 +16,6 @@ type Store interface {
 	Save(item ToDo) (string, error)
 	Delete(string) error
 	GetAll() ([]ToDotWithId, error)
+	Get(string) (ToDotWithId, error)
 	DeleteAll() error
 }
