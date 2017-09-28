@@ -23,9 +23,6 @@ func (t *ToDoDto) Bind(r *http.Request) error {
 	return nil
 }
 
-type allItemJson struct {
-	items []db.ToDo `json:"items"`
-}
 type deleteItemStruct struct {
 	Id string `json:"id"`
 }
