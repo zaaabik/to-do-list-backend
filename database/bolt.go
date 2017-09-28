@@ -1,7 +1,6 @@
 package database
 
 import (
-	_ "encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
