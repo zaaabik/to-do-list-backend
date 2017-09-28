@@ -1,31 +1,41 @@
-package server
+package rest
 
 import (
 	"encoding/json"
 	"github.com/go-chi/chi"
+	//	"github.com/go-chi/render"
+	"errors"
 	"github.com/go-chi/cors"
+	"github.com/go-chi/render"
 	db "github.com/zabik/to-do-list/database"
 	"io/ioutil"
 	"log"
 	"net/http"
 )
 
-type allItemJson struct {
-	items []db.ToDo `json:"items"`
-}
-
-type addItemStruct struct {
+type ToDoDto struct {
 	Name string `json:"name"`
 	Time string `json:"time"`
+}
+
+func (t *ToDoDto) Bind(r *http.Request) error {
+	if t.Time == "" || t.Name == "" {
+		return errors.New("empty request")
+	}
+	return nil
+}
+
+type allItemJson struct {
+	items []db.ToDo `json:"items"`
 }
 type deleteItemStruct struct {
 	Id string `json:"id"`
 }
 type Server struct {
-	store db.Istore
+	store db.Store
 }
 
-func NewServer(database db.Istore) (*Server, error) {
+func NewServer(database db.Store) (*Server, error) {
 	return &Server{database}, nil
 }
 
@@ -40,10 +50,10 @@ func (s Server) Start() {
 		MaxAge:           300, // Maximum value not ignored by any of major browsers
 	})
 	r.Use(c.Handler)
-	r.Post("/addItem", s.addItem)
-	r.Get("/getAll", s.getAllItems)
-	r.Delete("/deleteAll", s.deleteAll)
-	r.Delete("/deleteItem", s.deleteItem)
+	r.Post("/todo", s.addItem)
+	r.Get("/todo", s.getAllItems)
+	r.Delete("/todo", s.deleteAll)
+	r.Delete("/todo/", s.deleteItem)
 	http.ListenAndServe(":1113", r)
 
 }
@@ -64,19 +74,14 @@ func (s Server) deleteItem(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 func (s Server) addItem(w http.ResponseWriter, r *http.Request) {
-	res, _ := ioutil.ReadAll(r.Body)
-	var item addItemStruct
-	err := json.Unmarshal([]byte(res), &item)
+	item := ToDoDto{}
+	err := render.Bind(r, &item)
 	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
 		log.Print(err)
 		return
 	}
 	log.Print(item)
-	if item.Name == "" || item.Time == "" {
-		log.Print("empty parametrs on addItem method : bad request!")
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
 	id, err := s.store.Save(db.ToDo{item.Name, item.Time})
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
