@@ -1,11 +1,11 @@
 package database
 
-type ListItem struct {
+type ToDoItem struct {
 	Name string
 	Data string
 }
 
-type ListItemWithId struct {
+type ToDotItemWithId struct {
 	Id   string
 	Name string
 	Data string
@@ -13,8 +13,8 @@ type ListItemWithId struct {
 
 type Istore interface {
 	Close()
-	Save(item ListItem) (string, error)
+	Save(item ToDoItem) (string, error)
 	Delete(string) error
-	GetAll() ([]ListItemWithId, error)
+	GetAll() ([]ToDotItemWithId, error)
 	DeleteAll() error
 }
