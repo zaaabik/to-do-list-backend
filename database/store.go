@@ -2,7 +2,7 @@ package database
 
 type ToDo struct {
 	Name string
-	Data string
+	Time string
 }
 
 type ToDotWithId struct {
@@ -11,7 +11,7 @@ type ToDotWithId struct {
 	Data string
 }
 
-type Istore interface {
+type Store interface {
 	Close()
 	Save(item ToDo) (string, error)
 	Delete(string) error
