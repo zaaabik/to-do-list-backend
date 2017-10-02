@@ -35,7 +35,8 @@ type Server struct {
 }
 
 func NewServer(database db.Store) (*Server, error) {
-	return &Server{database}, nil
+	server := &Server{database}
+	return server, nil
 }
 
 func (s Server) Start() {
