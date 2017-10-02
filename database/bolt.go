@@ -129,7 +129,7 @@ func (b *BoltDb) CloseTodo(id string) error {
 		var item ToDo
 		json.Unmarshal(v, &item)
 		item.Id = string(id)
-		item.isClosed = true
+		item.IsClosed = true
 		item.UpdatedAt = time.Now().Format(time.ANSIC)
 		data, err := json.Marshal(item)
 		err = b.Put([]byte(id), data)
