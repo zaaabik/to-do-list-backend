@@ -54,7 +54,7 @@ func (s Server) Start() {
 	r.Get("/todo/{id}", s.getTodoHandler)
 	r.Delete("/todo", s.deleteAllTodoHandler)
 	r.Delete("/todo/{id}", s.deteleTodoHandler)
-	r.Post("todo/close/{id}", s.closeTodoHandler)
+	r.Post("/todo/close/{id}", s.closeTodoHandler)
 	http.ListenAndServe(":1113", r)
 }
 
