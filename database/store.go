@@ -1,9 +1,11 @@
 package database
 
 type ToDo struct {
-	Id   string
-	Name string
-	Time string
+	Id        string
+	Name      string
+	Time      string
+	UpdatedAt string
+	IsClosed  bool
 }
 
 type Store interface {
@@ -12,5 +14,6 @@ type Store interface {
 	Delete(string) error
 	GetAll() ([]ToDo, error)
 	Get(string) (ToDo, error)
+	CloseTodo(string) error
 	DeleteAll() error
 }

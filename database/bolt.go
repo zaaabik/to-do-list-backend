@@ -119,6 +119,28 @@ func (b *BoltDb) DeleteAll() error {
 	return nil
 }
 
+func (b *BoltDb) CloseTodo(id string) error {
+	err := b.db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(dbBucket))
+		if b == nil {
+			return errors.New("bucket is empty=" + id)
+		}
+		v := b.Get([]byte(id))
+		var item ToDo
+		json.Unmarshal(v, &item)
+		item.Id = string(id)
+		item.isClosed = true
+		item.UpdatedAt = time.Now().Format(time.ANSIC)
+		data, err := json.Marshal(item)
+		err = b.Put([]byte(id), data)
+		return err
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (b *BoltDb) Delete(key string) error {
 	err := b.db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(dbBucket))

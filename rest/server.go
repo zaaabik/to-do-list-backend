@@ -16,6 +16,13 @@ type ToDoDto struct {
 	Time string `json:"time"`
 }
 
+type ToDoResponseDto struct {
+	Id       string `json:"id"`
+	Name     string `json:"name"`
+	Time     string `json:"time"`
+	IsClosed bool   `json:"isClosed"`
+}
+
 func (t *ToDoDto) Bind(r *http.Request) error {
 	if t.Time == "" || t.Name == "" {
 		return errors.New("empty request")
@@ -42,16 +49,17 @@ func (s Server) Start() {
 		MaxAge:           300, // Maximum value not ignored by any of major browsers
 	})
 	r.Use(c.Handler)
-	r.Post("/todo", s.addItem)
-	r.Get("/todo", s.getAllItems)
-	r.Get("/todo/{id}", s.getItem)
-	r.Delete("/todo", s.deleteAll)
-	r.Delete("/todo/{id}", s.deleteItem)
+	r.Post("/todo", s.saveTodoHandler)
+	r.Get("/todo", s.getAllTodoHandler)
+	r.Get("/todo/{id}", s.getTodoHandler)
+	r.Delete("/todo", s.deleteAllTodoHandler)
+	r.Delete("/todo/{id}", s.deteleTodoHandler)
+	r.Post("todo/close/{id}", s.closeTodoHandler)
 	http.ListenAndServe(":1113", r)
 }
 
 //todo/{id}		GET
-func (s Server) getItem(w http.ResponseWriter, r *http.Request) {
+func (s Server) getTodoHandler(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	if id == "" {
 		log.Print("wrong url param: id is empty")
@@ -70,7 +78,7 @@ func (s Server) getItem(w http.ResponseWriter, r *http.Request) {
 }
 
 //todo/{id} DELETE
-func (s Server) deleteItem(w http.ResponseWriter, r *http.Request) {
+func (s Server) deteleTodoHandler(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	log.Print(id)
 	if id == "" {
@@ -88,7 +96,7 @@ func (s Server) deleteItem(w http.ResponseWriter, r *http.Request) {
 }
 
 //todo/{id} POST
-func (s Server) addItem(w http.ResponseWriter, r *http.Request) {
+func (s Server) saveTodoHandler(w http.ResponseWriter, r *http.Request) {
 	item := ToDoDto{}
 	err := render.Bind(r, &item)
 	if err != nil {
@@ -97,7 +105,7 @@ func (s Server) addItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	log.Print(item)
-	id, err := s.store.Save(db.ToDo{"", item.Name, item.Time})
+	id, err := s.store.Save(db.ToDo{"", item.Name, item.Time, "", false})
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -107,20 +115,25 @@ func (s Server) addItem(w http.ResponseWriter, r *http.Request) {
 }
 
 //todo/		GET
-func (s Server) getAllItems(w http.ResponseWriter, r *http.Request) {
+func (s Server) getAllTodoHandler(w http.ResponseWriter, r *http.Request) {
 	allItems, err := s.store.GetAll()
 	if err != nil {
 		log.Print(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	jsAllItems, _ := json.Marshal(allItems)
+	allTodoDto := convertAllToDto(allItems)
+	allTodoDtoRaw, err := json.Marshal(allTodoDto)
+	if err != nil {
+		log.Print(err)
+		return
+	}
 	w.WriteHeader(http.StatusOK)
-	w.Write(jsAllItems)
+	w.Write(allTodoDtoRaw)
 }
 
 //todo		DELETE
-func (s Server) deleteAll(w http.ResponseWriter, r *http.Request) {
+func (s Server) deleteAllTodoHandler(w http.ResponseWriter, r *http.Request) {
 	err := s.store.DeleteAll()
 	if err != nil {
 		log.Print(err)
@@ -128,4 +141,34 @@ func (s Server) deleteAll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+//todo/{id}		POST
+func (s Server) closeTodoHandler(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	err := s.store.CloseTodo(id)
+	if err != nil {
+		log.Print(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+func convertToDto(domainModelTodo db.ToDo) ToDoResponseDto {
+	var todo ToDoResponseDto
+	todo.Id = domainModelTodo.Id
+	todo.Name = domainModelTodo.Name
+	todo.IsClosed = domainModelTodo.IsClosed
+	todo.Time = domainModelTodo.Time
+	return todo
+}
+
+func convertAllToDto(domainModelTodoList []db.ToDo) []ToDoResponseDto {
+	length := len(domainModelTodoList)
+	responseTodoDto := make([]ToDoResponseDto, length)
+	for i := 0; i < length; i++ {
+		responseTodoDto[i] = convertToDto(domainModelTodoList[i])
+	}
+	return responseTodoDto
 }
