@@ -97,7 +97,7 @@ func (s Server) addItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	log.Print(item)
-	id, err := s.store.Save(db.ToDo{item.Name, item.Time})
+	id, err := s.store.Save(db.ToDo{"", item.Name, item.Time})
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return

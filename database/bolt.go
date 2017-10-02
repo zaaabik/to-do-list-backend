@@ -50,9 +50,9 @@ func (b *BoltDb) Save(item ToDo) (string, error) {
 	}
 	return key, nil
 }
-func (b *BoltDb) Get(id string) (ToDotWithId, error) {
-	var res ToDotWithId
-	emptyResult := ToDotWithId{}
+func (b *BoltDb) Get(id string) (ToDo, error) {
+	var res ToDo
+	emptyResult := ToDo{}
 	err := b.db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(dbBucket))
 		if b == nil {
@@ -75,17 +75,17 @@ func (b *BoltDb) Get(id string) (ToDotWithId, error) {
 	return res, nil
 }
 
-func (b *BoltDb) GetAll() ([]ToDotWithId, error) {
-	var res []ToDotWithId
+func (b *BoltDb) GetAll() ([]ToDo, error) {
+	var res []ToDo
 	err := b.db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(dbBucket))
 		if b == nil {
-			var emptyResult []ToDotWithId
+			var emptyResult []ToDo
 			res = emptyResult
 			return nil
 		}
 		err := b.ForEach(func(k, v []byte) error {
-			var item ToDotWithId
+			var item ToDo
 			json.Unmarshal(v, &item)
 			item.Id = string(k)
 			res = append(res, item)
