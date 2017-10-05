@@ -25,7 +25,8 @@ func NewBoltDb(path string) (*BoltDb, error) {
 }
 
 func (b *BoltDb) Save(item ToDo) (string, error) {
-	key := strconv.FormatInt(time.Now().Unix(), 10)
+	id := time.Now().UnixNano() / int64(time.Millisecond)
+	key := strconv.FormatInt(id, 10)
 	log.Print(key)
 	enc, err := json.Marshal(item)
 	if err != nil {
